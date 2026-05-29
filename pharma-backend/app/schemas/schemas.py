@@ -43,3 +43,31 @@ class SaleOut(BaseModel):
     sold_by: int
     sold_by_name: str
     created_at: str
+
+from datetime import date, datetime
+from typing import Optional
+
+# ... (schemas existentes)
+
+# Patient schemas
+class PatientBase(BaseModel):
+    name: str
+    birth_date: date
+    gender: str  # 'M' ou 'F'
+    phone: str
+    address: str
+    history: Optional[str] = None
+
+class PatientCreate(PatientBase):
+    pass
+
+class PatientUpdate(PatientBase):
+    pass  # PUT usa todos os campos
+
+class PatientOut(PatientBase):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True

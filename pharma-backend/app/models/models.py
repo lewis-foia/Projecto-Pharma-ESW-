@@ -27,3 +27,18 @@ class Sale(SQLModel, table=True):
     total_price: float
     sold_by: int = Field(foreign_key="user.id")
     created_at: str = Field(default_factory=lambda: datetime.now().isoformat())
+
+from datetime import date, datetime
+
+class Patient(Base):
+    __tablename__ = "patients"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    birth_date = Column(Date, nullable=False)
+    gender = Column(String(1), nullable=False)  # 'M' ou 'F'
+    phone = Column(String, nullable=False)
+    address = Column(String, nullable=False)
+    history = Column(Text, nullable=True)  # histórico médico opcional
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
