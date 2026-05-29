@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { mockApi } from '../services/mockApi';
 import { Sale, Product } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -124,7 +124,7 @@ export default function Dashboard() {
           <div>
             <p className="text-sm text-gray-500 font-medium">Vendas Hoje</p>
             <p className="text-2xl font-bold text-gray-800">{summary.todaySalesCount}</p>
-            <p className="text-xs text-emerald-600 font-medium">{summary.todaySalesTotal.toFixed(2)} €</p>
+            <p className="text-xs text-emerald-600 font-medium">{summary.todaySalesTotal.toFixed(2)} MT</p>
           </div>
         </div>
 
@@ -148,8 +148,8 @@ export default function Dashboard() {
           </div>
           <div>
             <p className="text-sm text-gray-500 font-medium">Receita 7 Dias</p>
-            <p className="text-2xl font-bold text-gray-800">{totalRevenue.toFixed(0)} €</p>
-            <p className="text-xs text-indigo-600 font-medium">Média: {avgDailyRevenue.toFixed(0)} €/dia</p>
+            <p className="text-2xl font-bold text-gray-800">{totalRevenue.toFixed(0)} MT</p>
+            <p className="text-xs text-indigo-600 font-medium">Média: {avgDailyRevenue.toFixed(0)} MT/dia</p>
           </div>
         </div>
       </div>
@@ -160,7 +160,7 @@ export default function Dashboard() {
           <TrendingUp size={18} className="text-emerald-500" />
           <div>
             <p className="text-xs text-gray-400">Melhor Dia</p>
-            <p className="font-semibold text-gray-700">{maxDay?.date} → {maxDay?.total.toFixed(2)} €</p>
+            <p className="font-semibold text-gray-700">{maxDay?.date} → {maxDay?.total.toFixed(2)} MT</p>
           </div>
         </div>
         <div className="bg-white p-4 rounded-xl shadow-sm flex items-center gap-3">
@@ -170,7 +170,7 @@ export default function Dashboard() {
             <p className="font-semibold text-gray-700">
               {summary.todaySalesCount > 0
                 ? (summary.todaySalesTotal / summary.todaySalesCount).toFixed(2)
-                : '0.00'} €
+                : '0.00'} MT
             </p>
           </div>
         </div>
@@ -210,7 +210,7 @@ export default function Dashboard() {
               />
               <Tooltip
                 cursor={{ fill: 'rgba(59, 130, 246, 0.08)' }}
-                formatter={(value: number) => [`${value.toFixed(2)} €`, 'Total']}
+                formatter={(value: number) => [`${value.toFixed(2)} MT`, 'Total']}
                 labelFormatter={(label) => `${label}`}
                 contentStyle={{
                   backgroundColor: '#fff',
@@ -339,7 +339,7 @@ export default function Dashboard() {
                       </td>
                       <td className="px-6 py-3 text-right">
                         <span className="text-sm font-semibold text-indigo-600">
-                          {sale.totalPrice.toFixed(2)} €
+                          {sale.totalPrice.toFixed(2)} MT
                         </span>
                       </td>
                       <td className="px-6 py-3">

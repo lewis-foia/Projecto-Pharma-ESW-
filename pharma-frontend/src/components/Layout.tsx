@@ -40,17 +40,17 @@ interface NavItem {
 // --------------------------------------------------------------
 const NAV_ITEMS: NavItem[] = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard', end: true },
-  { to: '/products', icon: Package, label: 'Medicamentos' },
+  { to: '/products', icon: Package, label: 'Medicamentos', roles: ['admin', 'pharmacist'] },
   { to: '/search', icon: Search, label: 'Pesquisar' },
-  { to: '/sales', icon: ReceiptText, label: 'Vendas' },
+  { to: '/sales', icon: ReceiptText, label: 'Vendas', roles: ['admin', 'pharmacist'] },
   { to: '/patients', icon: Users, label: 'Pacientes', roles: ['admin', 'recepcionista'] },
   { to: '/doctors', icon: Stethoscope, label: 'Médicos', roles: ['admin'] },
   { to: '/consultations', icon: CalendarCheck, label: 'Consultas' },
-  { to: '/payments', icon: Wallet, label: 'Pagamentos' },
+  { to: '/payments', icon: Wallet, label: 'Pagamentos', roles: ['admin', 'recepcionista'] },
   { to: '/chat', icon: MessageCircle, label: 'Chat' },
   { to: '/triage', icon: Brain, label: 'Triagem IA' },
   { to: '/prescriptions', icon: ClipboardList, label: 'Receitas' },
-  { to: '/referrals', icon: Building2, label: 'Encaminhamentos' },
+  { to: '/referrals', icon: Building2, label: 'Encaminhamentos', roles: ['admin', 'recepcionista'] },
   { to: '/notifications', icon: Bell, label: 'Notificações' },
   { to: '/reports', icon: BarChart3, label: 'Relatórios', roles: ['admin'] },
   { to: '/admin/users', icon: User, label: 'Utilizadores', roles: ['admin'] },
@@ -102,7 +102,7 @@ export default function Layout() {
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-100">
           {!sidebarCollapsed && (
             <h1 className="text-xl font-extrabold text-blue-600 tracking-tight">
-              <span className="text-blue-500">Pharma</span>Sys
+              <span className="text-blue-500">Pharma</span>
             </h1>
           )}
           {sidebarCollapsed && (
@@ -197,7 +197,7 @@ export default function Layout() {
             <Menu size={22} />
           </button>
           <h1 className="text-lg font-extrabold text-blue-600">
-            <span className="text-blue-500">Pharma</span>Sys
+            <span className="text-blue-500">Pharma</span>
           </h1>
           <button
             onClick={handleLogout}
