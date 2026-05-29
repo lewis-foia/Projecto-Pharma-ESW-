@@ -1,8 +1,8 @@
 ﻿from sqlmodel import Session
 from app.database import engine
-from app.models.models import User, Product, Sale
+from app.models.models import User, Product, Sale, Patient
 from app.utils.security import hash_password
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from random import randint, choice
 
 def seed_mock_data():
@@ -37,6 +37,33 @@ def seed_mock_data():
             Product(name="Metformina 850mg", category="Antidiabético", price=2.8, stock=90, min_stock=12, expiry_date="2027-05-30"),
         ]
         db.add_all(products)
+        
+        def seed_patients(db: Session):
+            if db.query(Patient).first():
+                return
+            
+            patients_data = [
+                {"name": "Maria Macuácua", "birth_date": date(1985, 3, 12), "gender": "F", 
+                "phone": "841234567", "address": "Maputo, Bairro Central", 
+                "history": "Hipertensão controlada"},
+                {"name": "João Sitoe", "birth_date": date(1990, 7, 25), "gender": "M", 
+                "phone": "823456789", "address": "Matola, Liberdade", 
+                "history": "Diabetes tipo 2"},
+                {"name": "Ana Mabunda", "birth_date": date(1978, 11, 5), "gender": "F", 
+                "phone": "845678901", "address": "Beira, Macuti", 
+                "history": "Asma brônquica"},
+                {"name": "Carlos Macuácua", "birth_date": date(2000, 1, 20), "gender": "M", 
+                "phone": "867890123", "address": "Nampula, Muatala", 
+                "history": None},
+                {"name": "Helena Sitoe", "birth_date": date(1995, 9, 14), "gender": "F", 
+                "phone": "879012345", "address": "Maputo, Polana Cimento", 
+                "history": "Alergia a penicilina"},
+            ]
+            
+            for p in patients_data:
+                patient = Patient(**p)
+                db.add(patient)
+        
         db.commit()
 
         base = datetime.now() - timedelta(days=30)
