@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { mockApi } from '../services/mockApi';
 import { Product, Sale } from '../types';
 import {
@@ -223,7 +223,7 @@ export default function Sales() {
           </div>
           <div>
             <p className="text-sm text-gray-500">Receita Total</p>
-            <p className="text-2xl font-bold">{totalRevenue.toFixed(2)} €</p>
+            <p className="text-2xl font-bold">{totalRevenue.toFixed(2)} MT</p>
           </div>
         </div>
         <div className="bg-white p-4 rounded-xl shadow-sm flex items-center gap-4">
@@ -232,7 +232,7 @@ export default function Sales() {
           </div>
           <div>
             <p className="text-sm text-gray-500">Ticket Médio</p>
-            <p className="text-2xl font-bold">{averageTicket.toFixed(2)} €</p>
+            <p className="text-2xl font-bold">{averageTicket.toFixed(2)} MT</p>
           </div>
         </div>
         <div className="bg-white p-4 rounded-xl shadow-sm flex items-center gap-4">
@@ -242,7 +242,7 @@ export default function Sales() {
           <div>
             <p className="text-sm text-gray-500">Vendas Hoje</p>
             <p className="text-2xl font-bold">{todaySales}</p>
-            <p className="text-xs text-gray-400">{todayRevenue.toFixed(2)} €</p>
+            <p className="text-xs text-gray-400">{todayRevenue.toFixed(2)} MT</p>
           </div>
         </div>
       </div>
@@ -374,7 +374,7 @@ export default function Sales() {
                       {/* Total */}
                       <td className="px-6 py-4 text-right">
                         <span className="text-base font-bold text-indigo-600">
-                          {sale.totalPrice.toFixed(2)} €
+                          {sale.totalPrice.toFixed(2)} MT
                         </span>
                       </td>
 
@@ -471,7 +471,7 @@ export default function Sales() {
               {selectedProduct && (
                 <div className="flex items-center justify-between bg-gray-50 p-4 rounded-xl">
                   <span className="text-gray-600 font-medium">Total</span>
-                  <span className="text-2xl font-bold text-indigo-600">{quickSaleTotal} €</span>
+                  <span className="text-2xl font-bold text-indigo-600">{quickSaleTotal} MT</span>
                 </div>
               )}
             </form>

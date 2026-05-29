@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Product } from '../types';
 import { mockApi } from '../services/mockApi';
 import {
@@ -468,7 +468,7 @@ export default function Products() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Preço (€) *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Preço (MT) *</label>
                   <input
                     type="number"
                     step="0.01"
