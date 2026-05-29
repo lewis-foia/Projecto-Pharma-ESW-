@@ -51,7 +51,7 @@ export default function Chat() {
       setText('');
       await loadMessages(); // recarrega mensagens
     } catch (err: any) {
-      // feedback rápido
+      
       alert(err.message || 'Erro ao enviar mensagem.');
     } finally {
       setSending(false);
