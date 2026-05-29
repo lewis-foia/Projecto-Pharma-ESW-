@@ -1,0 +1,115 @@
+---
+
+## 📄 `pharma-frontend/README.md`
+
+```markdown
+# Pharma Frontend
+
+Interface web para gestão de farmácia desenvolvida com **React**, **TypeScript** e **Tailwind CSS**. O frontend é totalmente independente e utiliza um serviço **mock** interno (dados em memória) para simular todas as operações.
+
+## 🎨 Stack
+
+| Tecnologia         | Finalidade                         |
+|--------------------|------------------------------------|
+| React 18           | Biblioteca de UI                   |
+| TypeScript         | Tipagem estática                   |
+| Tailwind CSS       | Framework utilitário de estilos    |
+| React Router DOM   | Navegação SPA                      |
+| Recharts           | Gráficos (dashboard)               |
+| Vite               | Build tool e dev server            |
+
+## 📁 Estrutura
+pharma-frontend/
+├── public/
+├── src/
+│ ├── components/
+│ │ └── Layout.tsx # Layout principal com sidebar
+│ ├── contexts/
+│ │ └── AuthContext.tsx # Contexto de autenticação (mock)
+│ ├── pages/
+│ │ ├── Login.tsx # Página de login
+│ │ ├── Dashboard.tsx # Dashboard com gráfico de vendas
+│ │ ├── Products.tsx # CRUD de medicamentos
+│ │ ├── Sales.tsx # Histórico de vendas + registo rápido
+│ │ └── Admin/
+│ │ └── Users.tsx # Gestão de utilizadores (admin)
+│ ├── services/
+│ │ └── mockApi.ts # API mock com dados em memória
+│ ├── types/
+│ │ └── index.ts # Interfaces TypeScript (User, Product, Sale)
+│ ├── App.tsx # Configuração de rotas
+│ ├── main.tsx # Ponto de entrada React
+│ └── index.css # Estilos globais (Tailwind)
+├── index.html
+├── vite.config.ts
+├── tsconfig.json
+├── tailwind.config.js
+├── postcss.config.js
+├── package.json
+└── README.md
+
+text
+
+## 🚀 Como executar
+
+### 1. Instalar dependências
+
+```powershell
+npm install
+2. Iniciar servidor de desenvolvimento
+powershell
+npm run dev
+O frontend ficará disponível em http://localhost:5173.
+
+3. Build para produção
+powershell
+npm run build
+npm run preview
+🔐 Autenticação (mock)
+O sistema utiliza um contexto de autenticação simulado. As credenciais estão definidas no ficheiro src/services/mockApi.ts:
+
+Utilizador	Password	Papel
+admin	admin123	Administrador
+farmacia	farma123	Farmacêutico
+O token JWT é simulado (string fixa) e não há comunicação real com o backend.
+
+📱 Funcionalidades
+🔐 Login
+Validação de credenciais contra o mock
+
+Redirecionamento automático para o dashboard após login
+
+📊 Dashboard
+Cartões com resumo: total de produtos, vendas do dia, stock crítico, receita dos últimos 7 dias
+
+Gráfico de barras (Recharts) com as vendas diárias da última semana
+
+Alertas para produtos com stock abaixo do mínimo
+
+💊 Medicamentos
+Tabela com todos os produtos (nome, categoria, preço, stock, validade)
+
+Modal para criar novo produto ou editar existente
+
+Destaque visual para stock baixo (a vermelho)
+
+🧾 Vendas
+Histórico completo de vendas (data, produto, quantidade, total, vendedor)
+
+Modal de registo rápido: seleciona o produto e a quantidade, calcula o total automaticamente e actualiza o stock
+
+👥 Administração (apenas admin)
+Lista de utilizadores com nome, username, email e papel
+
+Activar/desactivar utilizadores (excepto o próprio administrador)
+
+🧪 Dados Mock
+O serviço mockApi.ts contém:
+
+8 medicamentos predefinidos
+
+2 utilizadores (admin + farmacêutico)
+
+50 vendas geradas aleatoriamente nos últimos 30 dias
+
+Todos os dados são mantidos em arrays em memória. Ao recarregar a página, as vendas e stocks voltam ao estado inicial. Ideal para desenvolvimento e demonstrações.
