@@ -10,37 +10,21 @@ import {
   Stethoscope,
   Loader2,
   AlertTriangle,
-  ArrowRight,
 } from 'lucide-react';
 
-// --------------------------------------------------------------
-// Credenciais de teste (apenas 3 utilizadores)
-// --------------------------------------------------------------
-const TEST_CREDENTIALS = [
-  { username: 'admin', password: 'admin123', label: 'Administrador' },
-  { username: 'farmacia', password: 'farma123', label: 'Farmacêutico' },
-  { username: 'paciente', password: 'paciente123', label: 'Paciente' },
-];
-
-// --------------------------------------------------------------
-// Componente principal
-// --------------------------------------------------------------
 export default function Login() {
   const { login } = useAuth();
 
-  // ---------- Estado ----------
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // ---------- Handlers ----------
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
 
-    // Validação básica
     if (!username.trim()) {
       setError('Por favor, insira o nome de utilizador.');
       return;
@@ -60,13 +44,6 @@ export default function Login() {
     }
   };
 
-  const fillCredentials = (cred: (typeof TEST_CREDENTIALS)[number]) => {
-    setUsername(cred.username);
-    setPassword(cred.password);
-    setError('');
-  };
-
-  // ---------- Render ----------
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4">
       <div className="relative bg-white p-8 sm:p-10 rounded-3xl shadow-2xl w-full max-w-md border border-gray-100 overflow-hidden">
@@ -170,38 +147,14 @@ export default function Login() {
             </button>
           </form>
 
-          {/* Link para registo + Credenciais de teste */}
-          <div className="mt-6 text-center space-y-2">
+          {/* Link para registo */}
+          <div className="mt-6 text-center">
             <p className="text-sm text-gray-500">
               Não tem conta?{' '}
               <Link to="/register" className="text-blue-600 hover:underline font-semibold">
                 Registe-se aqui
               </Link>
             </p>
-
-            <div className="mt-5 pt-5 border-t border-gray-100 space-y-1">
-              <p className="text-xs font-medium text-gray-400 uppercase tracking-wider text-center mb-3">
-                Credenciais de Teste
-              </p>
-              {TEST_CREDENTIALS.map((cred) => (
-                <button
-                  key={cred.username}
-                  type="button"
-                  onClick={() => fillCredentials(cred)}
-                  className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 hover:bg-blue-50 hover:border-blue-200 transition-all group"
-                >
-                  <div className="text-left">
-                    <p className="text-sm font-semibold text-gray-700 group-hover:text-blue-700">
-                      {cred.username}
-                    </p>
-                    <p className="text-xs text-gray-400 group-hover:text-blue-500">
-                      {cred.label}
-                    </p>
-                  </div>
-                  <ArrowRight size={16} className="text-gray-300 group-hover:text-blue-500 transition-colors" />
-                </button>
-              ))}
-            </div>
           </div>
         </div>
       </div>

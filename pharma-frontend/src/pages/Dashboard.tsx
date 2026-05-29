@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import { mockApi } from '../services/mockApi';
-import { Sale, Product } from '../types';
+import { Sale, Product, Consultation, Prescription, Notification } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import {
   Package,
@@ -17,139 +18,274 @@ import {
   Hash,
   Layers,
   Activity,
+  Stethoscope,
+  ClipboardList,
+  Bell,
+  Brain,
+  Search,
+  MessageCircle,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
-// --------------------------------------------------------------
-// Componente principal
-// --------------------------------------------------------------
 export default function Dashboard() {
-  const [summary, setSummary] = useState<any>(null);
-  const [recentSales, setRecentSales] = useState<Sale[]>([]);
-  const [lowStockProducts, setLowStockProducts] = useState<Product[]>([]);
+  const { user } = useAuth();
+  const isPatient = user?.role === 'patient';
+
+  // Estados comuns
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadDashboard = async () => {
+  // Estados para profissionais
+  const [summary, setSummary] = useState<any>(null);
+  const [recentSales, setRecentSales] = useState<Sale[]>([]);
+  const [lowStockProducts, setLowStockProducts] = useState<Product[]>([]);
+
+  // Estados para pacientes
+  const [consultations, setConsultations] = useState<Consultation[]>([]);
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+
+  const loadData = async () => {
     setLoading(true);
     setError(null);
     try {
-      const [summaryData, salesData, productsData] = await Promise.all([
-        mockApi.getDashboardSummary(),
-        mockApi.getSales(),
-        mockApi.getProducts(),
-      ]);
+      if (isPatient) {
+        // Carregar dados pessoais do paciente
+        const [allConsultations, allPrescriptions, userNotifications] = await Promise.all([
+          mockApi.getConsultations(),
+          mockApi.getPrescriptions(),
+          mockApi.getNotifications(user!.id),
+        ]);
 
-      setSummary(summaryData);
+        // Filtrar consultas do paciente (assumindo que o paciente está associado a um Patient com mesmo nome? 
+        // Idealmente o sistema teria um link entre User e Patient. Para já, vamos filtrar por patientId se houver um patientId correspondente.
+        // Como o mock atual não liga User a Patient, vamos assumir que o paciente "Paciente Teste" tem id de paciente 1 ou 2?
+        // Vamos melhorar: vamos assumir que o paciente tem patientId = 1 (João Silva) para exemplo.
+        const patientId = 1; // Mock: paciente logado é o João Silva
+        const myConsultations = allConsultations.filter(c => c.patientId === patientId);
+        const myPrescriptions = allPrescriptions.filter(p => p.patientId === patientId);
 
-      // Últimas 5 vendas
-      setRecentSales(salesData.slice(0, 5));
-
-      // Produtos com stock baixo
-      setLowStockProducts(productsData.filter((p) => p.stock <= p.minStock));
+        setConsultations(myConsultations);
+        setPrescriptions(myPrescriptions);
+        setNotifications(userNotifications);
+      } else {
+        // Profissionais: carregar dados de gestão
+        const [summaryData, salesData, productsData] = await Promise.all([
+          mockApi.getDashboardSummary(),
+          mockApi.getSales(),
+          mockApi.getProducts(),
+        ]);
+        setSummary(summaryData);
+        setRecentSales(salesData.slice(0, 5));
+        setLowStockProducts(productsData.filter(p => p.stock <= p.minStock));
+      }
     } catch (err: any) {
-      setError(err.message || 'Erro ao carregar dados do dashboard.');
+      setError(err.message || 'Erro ao carregar dados.');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadDashboard();
-  }, []);
+    loadData();
+  }, [user]);
 
-  // ---------- Render: Loading ----------
+  // --- Loading ---
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-32 text-gray-500">
         <Loader2 size={48} className="animate-spin mb-5 text-blue-600" />
-        <p className="text-lg font-medium text-gray-600">Carregando dashboard...</p>
-        <p className="text-sm text-gray-400 mt-1">A obter dados actualizados</p>
+        <p className="text-lg font-medium">Carregando o seu painel...</p>
       </div>
     );
   }
 
-  // ---------- Render: Erro ----------
-  if (error || !summary) {
+  // --- Erro ---
+  if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-32 text-rose-500 gap-4">
         <AlertTriangle size={48} />
-        <p className="text-lg font-medium">{error || 'Erro ao carregar dados.'}</p>
-        <button
-          onClick={loadDashboard}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-rose-50 text-rose-700 font-medium rounded-xl border border-rose-200 hover:bg-rose-100 transition"
-        >
-          <RefreshCw size={16} />
-          Tentar novamente
+        <p className="text-lg font-medium">{error}</p>
+        <button onClick={loadData} className="btn-rose-outline">
+          <RefreshCw size={16} /> Tentar novamente
         </button>
       </div>
     );
   }
 
-  // ---------- Cálculos adicionais ----------
+  // ========================
+  // Dashboard do Paciente
+  // ========================
+  if (isPatient) {
+    const nextConsultation = consultations.find(c => c.status === 'agendada');
+    const unreadNotifications = notifications.filter(n => !n.read).length;
+
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
+          Olá, {user?.fullName.split(' ')[0]}!
+        </h1>
+
+        {/* Cards de resumo pessoais */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white p-5 rounded-xl shadow-sm flex items-center gap-4">
+            <div className="p-3 bg-blue-100 rounded-xl"><Calendar className="text-blue-600" size={22} /></div>
+            <div>
+              <p className="text-sm text-gray-500">Próxima Consulta</p>
+              <p className="text-xl font-bold">{nextConsultation ? `${nextConsultation.date} ${nextConsultation.time}` : 'Nenhuma'}</p>
+            </div>
+          </div>
+          <div className="bg-white p-5 rounded-xl shadow-sm flex items-center gap-4">
+            <div className="p-3 bg-green-100 rounded-xl"><ClipboardList className="text-green-600" size={22} /></div>
+            <div>
+              <p className="text-sm text-gray-500">Receitas Ativas</p>
+              <p className="text-xl font-bold">{prescriptions.length}</p>
+            </div>
+          </div>
+          <div className="bg-white p-5 rounded-xl shadow-sm flex items-center gap-4">
+            <div className="p-3 bg-orange-100 rounded-xl"><Bell className="text-orange-600" size={22} /></div>
+            <div>
+              <p className="text-sm text-gray-500">Notificações</p>
+              <p className="text-xl font-bold">{unreadNotifications} por ler</p>
+            </div>
+          </div>
+          <div className="bg-white p-5 rounded-xl shadow-sm flex items-center gap-4">
+            <div className="p-3 bg-purple-100 rounded-xl"><Brain className="text-purple-600" size={22} /></div>
+            <div>
+              <p className="text-sm text-gray-500">Última Triagem</p>
+              <p className="text-xl font-bold">Ver</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Próximas consultas */}
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+            <h2 className="font-semibold text-gray-800">As Minhas Consultas</h2>
+            <Link to="/consultations" className="text-sm text-blue-600 hover:underline">Ver todas</Link>
+          </div>
+          {consultations.length === 0 ? (
+            <div className="p-6 text-center text-gray-400">Nenhuma consulta agendada.</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
+                  <tr>
+                    <th className="px-6 py-3 text-left">Médico</th>
+                    <th className="px-6 py-3 text-left">Data</th>
+                    <th className="px-6 py-3 text-left">Estado</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {consultations.map(c => (
+                    <tr key={c.id}>
+                      <td className="px-6 py-4">{c.doctorName}</td>
+                      <td className="px-6 py-4">{c.date} às {c.time}</td>
+                      <td className="px-6 py-4"><span className={`badge ${c.status === 'agendada' ? 'bg-blue-100 text-blue-700' : c.status === 'realizada' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{c.status}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Receitas recentes */}
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+            <h2 className="font-semibold text-gray-800">Receitas Recentes</h2>
+            <Link to="/prescriptions" className="text-sm text-blue-600 hover:underline">Ver todas</Link>
+          </div>
+          {prescriptions.length === 0 ? (
+            <div className="p-6 text-center text-gray-400">Nenhuma receita emitida.</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
+                  <tr>
+                    <th className="px-6 py-3 text-left">Medicamento</th>
+                    <th className="px-6 py-3 text-left">Dosagem</th>
+                    <th className="px-6 py-3 text-left">Data</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {prescriptions.map(p => (
+                    <tr key={p.id}>
+                      <td className="px-6 py-4 font-medium">{p.medication}</td>
+                      <td className="px-6 py-4">{p.dosage}</td>
+                      <td className="px-6 py-4">{new Date(p.issuedAt).toLocaleDateString('pt-PT')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Atalhos rápidos */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { to: '/search', icon: Search, label: 'Pesquisar Medicamento' },
+            { to: '/triage', icon: Brain, label: 'Triagem de Sintomas' },
+            { to: '/chat', icon: MessageCircle, label: 'Falar com Farmacêutico' },
+            { to: '/notifications', icon: Bell, label: 'Notificações' },
+          ].map(item => (
+            <Link key={item.to} to={item.to} className="bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition flex flex-col items-center gap-2 text-center">
+              <item.icon size={24} className="text-blue-600" />
+              <span className="text-sm font-medium text-gray-700">{item.label}</span>
+            </Link>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ========================
+  // Dashboard Profissional
+  // ========================
   const totalRevenue = summary.salesLast7Days.reduce((sum: number, d: any) => sum + d.total, 0);
   const avgDailyRevenue = totalRevenue / 7;
-  const maxDay = summary.salesLast7Days.reduce((max: any, d: any) =>
-    d.total > max.total ? d : max, summary.salesLast7Days[0]
-  );
+  const maxDay = summary.salesLast7Days.reduce((max: any, d: any) => d.total > max.total ? d : max, summary.salesLast7Days[0]);
 
   return (
     <div className="space-y-6">
-      {/* Cabeçalho */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 flex items-center gap-3">
-          <Activity className="w-8 h-8 text-blue-600" />
-          Dashboard
-        </h1>
-        <p className="text-sm text-gray-500 mt-1">Visão geral do desempenho da farmácia</p>
-      </div>
+      <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 flex items-center gap-3">
+        <Activity className="w-8 h-8 text-blue-600" />
+        Dashboard
+      </h1>
 
-      {/* Cards de estatísticas principais */}
+      {/* Cards principais */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total Produtos */}
-        <div className="bg-white p-5 rounded-xl shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
-          <div className="p-3 bg-blue-100 rounded-xl">
-            <Package className="text-blue-600" size={22} />
-          </div>
+        <div className="bg-white p-5 rounded-xl shadow-sm flex items-center gap-4">
+          <div className="p-3 bg-blue-100 rounded-xl"><Package className="text-blue-600" size={22} /></div>
           <div>
-            <p className="text-sm text-gray-500 font-medium">Total Produtos</p>
-            <p className="text-2xl font-bold text-gray-800">{summary.totalProducts}</p>
+            <p className="text-sm text-gray-500">Total Produtos</p>
+            <p className="text-2xl font-bold">{summary.totalProducts}</p>
           </div>
         </div>
-
-        {/* Vendas Hoje */}
-        <div className="bg-white p-5 rounded-xl shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
-          <div className="p-3 bg-emerald-100 rounded-xl">
-            <ShoppingCart className="text-emerald-600" size={22} />
-          </div>
+        <div className="bg-white p-5 rounded-xl shadow-sm flex items-center gap-4">
+          <div className="p-3 bg-emerald-100 rounded-xl"><ShoppingCart className="text-emerald-600" size={22} /></div>
           <div>
-            <p className="text-sm text-gray-500 font-medium">Vendas Hoje</p>
-            <p className="text-2xl font-bold text-gray-800">{summary.todaySalesCount}</p>
-            <p className="text-xs text-emerald-600 font-medium">{summary.todaySalesTotal.toFixed(2)} MT</p>
+            <p className="text-sm text-gray-500">Vendas Hoje</p>
+            <p className="text-2xl font-bold">{summary.todaySalesCount}</p>
+            <p className="text-xs text-emerald-600">{summary.todaySalesTotal.toFixed(2)} MT</p>
           </div>
         </div>
-
-        {/* Stock Baixo */}
-        <div className="bg-white p-5 rounded-xl shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
+        <div className="bg-white p-5 rounded-xl shadow-sm flex items-center gap-4">
           <div className={`p-3 rounded-xl ${summary.lowStockCount > 0 ? 'bg-rose-100' : 'bg-gray-100'}`}>
             <AlertTriangle className={summary.lowStockCount > 0 ? 'text-rose-600' : 'text-gray-400'} size={22} />
           </div>
           <div>
-            <p className="text-sm text-gray-500 font-medium">Stock Crítico</p>
-            <p className={`text-2xl font-bold ${summary.lowStockCount > 0 ? 'text-rose-600' : 'text-gray-800'}`}>
-              {summary.lowStockCount}
-            </p>
+            <p className="text-sm text-gray-500">Stock Crítico</p>
+            <p className={`text-2xl font-bold ${summary.lowStockCount > 0 ? 'text-rose-600' : 'text-gray-800'}`}>{summary.lowStockCount}</p>
           </div>
         </div>
-
-        {/* Receita 7 dias */}
-        <div className="bg-white p-5 rounded-xl shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
-          <div className="p-3 bg-indigo-100 rounded-xl">
-            <DollarSign className="text-indigo-600" size={22} />
-          </div>
+        <div className="bg-white p-5 rounded-xl shadow-sm flex items-center gap-4">
+          <div className="p-3 bg-indigo-100 rounded-xl"><DollarSign className="text-indigo-600" size={22} /></div>
           <div>
-            <p className="text-sm text-gray-500 font-medium">Receita 7 Dias</p>
-            <p className="text-2xl font-bold text-gray-800">{totalRevenue.toFixed(0)} MT</p>
-            <p className="text-xs text-indigo-600 font-medium">Média: {avgDailyRevenue.toFixed(0)} MT/dia</p>
+            <p className="text-sm text-gray-500">Receita 7 Dias</p>
+            <p className="text-2xl font-bold">{totalRevenue.toFixed(0)} MT</p>
+            <p className="text-xs text-indigo-600">Média: {avgDailyRevenue.toFixed(0)} MT/dia</p>
           </div>
         </div>
       </div>
@@ -160,72 +296,36 @@ export default function Dashboard() {
           <TrendingUp size={18} className="text-emerald-500" />
           <div>
             <p className="text-xs text-gray-400">Melhor Dia</p>
-            <p className="font-semibold text-gray-700">{maxDay?.date} → {maxDay?.total.toFixed(2)} MT</p>
+            <p className="font-semibold">{maxDay?.date} → {maxDay?.total.toFixed(2)} MT</p>
           </div>
         </div>
         <div className="bg-white p-4 rounded-xl shadow-sm flex items-center gap-3">
           <Clock size={18} className="text-amber-500" />
           <div>
             <p className="text-xs text-gray-400">Ticket Médio Hoje</p>
-            <p className="font-semibold text-gray-700">
-              {summary.todaySalesCount > 0
-                ? (summary.todaySalesTotal / summary.todaySalesCount).toFixed(2)
-                : '0.00'} MT
-            </p>
+            <p className="font-semibold">{summary.todaySalesCount > 0 ? (summary.todaySalesTotal / summary.todaySalesCount).toFixed(2) : '0.00'} MT</p>
           </div>
         </div>
         <div className="bg-white p-4 rounded-xl shadow-sm flex items-center gap-3">
           <Layers size={18} className="text-blue-500" />
           <div>
             <p className="text-xs text-gray-400">Produtos com Stock OK</p>
-            <p className="font-semibold text-gray-700">{summary.totalProducts - summary.lowStockCount}</p>
+            <p className="font-semibold">{summary.totalProducts - summary.lowStockCount}</p>
           </div>
         </div>
       </div>
 
-      {/* Gráfico + Alertas lado a lado (desktop) */}
+      {/* Gráfico + Alertas */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Gráfico de vendas */}
         <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <TrendingUp size={20} className="text-blue-600" />
-            Vendas Diárias (Últimos 7 Dias)
-          </h2>
+          <h2 className="text-lg font-semibold mb-4">Vendas Diárias (7 Dias)</h2>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart
-              data={summary.salesLast7Days}
-              margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
-            >
+            <BarChart data={summary.salesLast7Days}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis
-                dataKey="date"
-                tick={{ fontSize: 12, fill: '#888' }}
-                axisLine={{ stroke: '#e0e0e0' }}
-                tickLine={false}
-              />
-              <YAxis
-                tick={{ fontSize: 12, fill: '#888' }}
-                axisLine={{ stroke: '#e0e0e0' }}
-                tickLine={false}
-              />
-              <Tooltip
-                cursor={{ fill: 'rgba(59, 130, 246, 0.08)' }}
-                formatter={(value: number) => [`${value.toFixed(2)} MT`, 'Total']}
-                labelFormatter={(label) => `${label}`}
-                contentStyle={{
-                  backgroundColor: '#fff',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '12px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                  fontSize: '13px',
-                }}
-              />
-              <Bar
-                dataKey="total"
-                fill="url(#gradient)"
-                radius={[8, 8, 0, 0]}
-                barSize={36}
-              />
+              <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} />
+              <Tooltip formatter={(value: number) => [`${value.toFixed(2)} MT`, 'Total']} />
+              <Bar dataKey="total" fill="url(#gradient)" radius={[8, 8, 0, 0]} barSize={36} />
               <defs>
                 <linearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#4c6fff" />
@@ -236,39 +336,21 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </div>
 
-        {/* Painel de alertas */}
         <div className="bg-white p-6 rounded-xl shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <AlertTriangle size={20} className="text-rose-500" />
-            Alertas de Stock
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <AlertTriangle size={20} className="text-rose-500" /> Alertas de Stock
           </h2>
           {lowStockProducts.length === 0 ? (
-            <div className="text-center py-8 text-gray-400">
-              <Package size={40} className="mx-auto mb-3" />
-              <p className="text-sm font-medium">Stock normalizado</p>
-              <p className="text-xs mt-1">Todos os produtos com stock adequado</p>
-            </div>
+            <div className="text-center py-8 text-gray-400">Stock normalizado.</div>
           ) : (
             <div className="space-y-3">
-              {lowStockProducts.map((product) => (
-                <div
-                  key={product.id}
-                  className="flex items-center justify-between p-3 bg-rose-50 rounded-xl border border-rose-100"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-rose-100 flex items-center justify-center">
-                      <Package size={14} className="text-rose-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-800">{product.name}</p>
-                      <p className="text-xs text-rose-600">
-                        Stock: {product.stock} / Mín: {product.minStock}
-                      </p>
-                    </div>
+              {lowStockProducts.map(prod => (
+                <div key={prod.id} className="flex items-center justify-between p-3 bg-rose-50 rounded-xl border border-rose-100">
+                  <div>
+                    <p className="text-sm font-semibold">{prod.name}</p>
+                    <p className="text-xs text-rose-600">Stock: {prod.stock} / Mín: {prod.minStock}</p>
                   </div>
-                  <span className="text-xs font-bold text-rose-600 bg-rose-100 px-2 py-1 rounded-full">
-                    -{product.minStock - product.stock}
-                  </span>
+                  <span className="text-xs font-bold text-rose-600 bg-rose-100 px-2 py-1 rounded-full">-{prod.minStock - prod.stock}</span>
                 </div>
               ))}
             </div>
@@ -278,80 +360,31 @@ export default function Dashboard() {
 
       {/* Últimas vendas */}
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-            <Clock size={20} className="text-blue-600" />
-            Últimas Vendas
-          </h2>
-          <a href="/sales" className="text-sm text-blue-600 hover:underline flex items-center gap-1">
-            Ver todas <ArrowRight size={14} />
-          </a>
+        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+          <h2 className="font-semibold">Últimas Vendas</h2>
+          <Link to="/sales" className="text-sm text-blue-600 hover:underline">Ver todas</Link>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                <th className="px-6 py-3">Data</th>
-                <th className="px-6 py-3">Produto</th>
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
+              <tr>
+                <th className="px-6 py-3 text-left">Data</th>
+                <th className="px-6 py-3 text-left">Produto</th>
                 <th className="px-6 py-3 text-center">Qtd.</th>
                 <th className="px-6 py-3 text-right">Total</th>
-                <th className="px-6 py-3">Vendedor</th>
+                <th className="px-6 py-3 text-left">Vendedor</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {recentSales.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-10 text-center text-gray-400">
-                    <ShoppingCart size={32} className="mx-auto mb-2" />
-                    <p className="text-sm">Nenhuma venda registada</p>
-                  </td>
+              {recentSales.map(sale => (
+                <tr key={sale.id}>
+                  <td className="px-6 py-3">{new Date(sale.createdAt).toLocaleDateString('pt-PT')}</td>
+                  <td className="px-6 py-3 font-medium">{sale.productName}</td>
+                  <td className="px-6 py-3 text-center">{sale.quantity}</td>
+                  <td className="px-6 py-3 text-right font-semibold text-indigo-600">{sale.totalPrice.toFixed(2)} MT</td>
+                  <td className="px-6 py-3 text-gray-500">{sale.soldByName}</td>
                 </tr>
-              ) : (
-                recentSales.map((sale) => {
-                  const saleDate = new Date(sale.createdAt);
-                  return (
-                    <tr key={sale.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-3">
-                        <div className="flex items-center gap-2 text-sm">
-                          <Calendar size={14} className="text-gray-400" />
-                          <span className="text-gray-700">
-                            {saleDate.toLocaleDateString('pt-PT', {
-                              day: '2-digit',
-                              month: 'short',
-                            })}
-                          </span>
-                          <span className="text-xs text-gray-400">
-                            {saleDate.toLocaleTimeString('pt-PT', {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-3">
-                        <span className="text-sm font-medium text-gray-800">{sale.productName}</span>
-                      </td>
-                      <td className="px-6 py-3 text-center">
-                        <span className="inline-flex items-center gap-1 text-sm text-gray-600">
-                          <Hash size={12} />
-                          {sale.quantity}
-                        </span>
-                      </td>
-                      <td className="px-6 py-3 text-right">
-                        <span className="text-sm font-semibold text-indigo-600">
-                          {sale.totalPrice.toFixed(2)} MT
-                        </span>
-                      </td>
-                      <td className="px-6 py-3">
-                        <div className="flex items-center gap-1.5 text-sm text-gray-500">
-                          <User size={12} />
-                          {sale.soldByName}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
+              ))}
             </tbody>
           </table>
         </div>

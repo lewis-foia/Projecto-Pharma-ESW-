@@ -25,7 +25,7 @@ const INITIAL_FORM = {
   email: '',
   password: '',
   confirmPassword: '',
-  role: 'patient' as 'admin' | 'pharmacist' | 'recepcionista' | 'patient',
+  role: 'patient' as 'admin' | 'pharmacist' | 'patient',
 };
 
 // --------------------------------------------------------------
@@ -35,7 +35,7 @@ export default function Register() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Se já estiver autenticado, redirecciona para o dashboard
+  // Se já estiver autenticado, redireciona para o dashboard
   if (user) {
     navigate('/', { replace: true });
     return null;
@@ -256,7 +256,7 @@ export default function Register() {
                 </div>
               </div>
 
-              {/* Perfil / Papel */}
+              {/* Perfil / Papel (sem recepcionista) */}
               <div>
                 <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1.5">
                   Perfil <span className="text-rose-500">*</span>
@@ -269,12 +269,8 @@ export default function Register() {
                 >
                   <option value="patient">Paciente</option>
                   <option value="pharmacist">Farmacêutico</option>
-                  <option value="recepcionista">Recepcionista</option>
                   <option value="admin">Administrador</option>
                 </select>
-                <p className="text-xs text-gray-400 mt-1">
-                  Apenas administradores podem criar outros administradores (versão real).
-                </p>
               </div>
 
               {/* Botão de registo */}
