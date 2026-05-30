@@ -1,8 +1,7 @@
 ﻿from pydantic import BaseModel
-from typing import Optional, List, Dict, Any
-from datetime import date, datetime
-from typing import Optional
+from typing import Optional, List
 
+# ---------- Auth ----------
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
@@ -15,6 +14,14 @@ class UserOut(BaseModel):
     role: str
     is_active: bool
 
+class UserCreate(BaseModel):
+    full_name: str
+    username: str
+    email: str
+    password: str
+    role: str = "patient"
+
+# ---------- Product ----------
 class ProductOut(BaseModel):
     id: int
     name: str
@@ -32,6 +39,7 @@ class ProductCreate(BaseModel):
     min_stock: int = 10
     expiry_date: Optional[str] = None
 
+# ---------- Sale ----------
 class SaleCreate(BaseModel):
     product_id: int
     quantity: int
@@ -46,179 +54,135 @@ class SaleOut(BaseModel):
     sold_by_name: str
     created_at: str
 
-
-class PatientBase(BaseModel):
+# ---------- Patient ----------
+class PatientCreate(BaseModel):
     name: str
-    birth_date: date
-    gender: str  # 'M' ou 'F'
+    birth_date: str
+    gender: str
     phone: str
     address: str
     history: Optional[str] = None
 
-class PatientCreate(PatientBase):
-    pass
-
-class PatientUpdate(PatientBase):
-    pass
-
-class PatientOut(PatientBase):
+class PatientOut(BaseModel):
     id: int
-    created_at: datetime
-    updated_at: datetime
+    name: str
+    birth_date: str
+    gender: str
+    phone: str
+    address: str
+    history: Optional[str] = None
 
-    class Config:
-        from_attributes = True
-
-#  Doctor 
-class DoctorBase(BaseModel):
-    user_id: int
-    crm: str
+# ---------- Doctor ----------
+class DoctorCreate(BaseModel):
+    name: str
     specialty: str
     phone: str
     email: str
+    available_days: str
 
-class DoctorCreate(DoctorBase):
-    pass
-
-class DoctorOut(DoctorBase):
+class DoctorOut(BaseModel):
     id: int
-
-    class Config:
-        from_attributes = True
-
-#  Consultation 
-class ConsultationBase(BaseModel):
-    patient_id: int
-    doctor_id: int
-    scheduled_date: datetime
-    status: str = "agendada"
-    notes: Optional[str] = None
-
-class ConsultationCreate(ConsultationBase):
-    pass
-
-class ConsultationOut(ConsultationBase):
-    id: int
-
-    class Config:
-        from_attributes = True
-
-#  Payment 
-class PaymentBase(BaseModel):
-    consultation_id: Optional[int] = None
-    amount: float
-    payment_date: Optional[datetime] = None  # se não enviado, usa-se default
-    method: str
-    status: str = "pendente"
-    receipt_number: str
-    registered_by: int
-
-class PaymentCreate(PaymentBase):
-    pass
-
-class PaymentOut(PaymentBase):
-    id: int
-
-    class Config:
-        from_attributes = True
-
-#  Prescription 
-class MedicationItem(BaseModel):
     name: str
-    dosage: str
-    duration: str  # ex: "7 dias"
+    specialty: str
+    phone: str
+    email: str
+    available_days: str
 
-class PrescriptionBase(BaseModel):
+# ---------- Consultation ----------
+class ConsultationCreate(BaseModel):
     patient_id: int
     doctor_id: int
-    consultation_id: Optional[int] = None
-    medications: List[MedicationItem]  # será convertido para JSON string
-    issued_at: Optional[datetime] = None
+    date: str
+    time: str
+
+class ConsultationOut(BaseModel):
+    id: int
+    patient_id: int
+    patient_name: str
+    doctor_id: int
+    doctor_name: str
+    date: str
+    time: str
+    status: str
     notes: Optional[str] = None
 
-class PrescriptionCreate(PrescriptionBase):
-    pass
+# ---------- Payment ----------
+class PaymentCreate(BaseModel):
+    consultation_id: int
+    amount: float
+    method: str
 
-class PrescriptionOut(PrescriptionBase):
+class PaymentOut(BaseModel):
     id: int
-    issued_at: datetime
+    consultation_id: int
+    amount: float
+    method: str
+    date: str
+    receipt_number: str
 
-    class Config:
-        from_attributes = True
-
-#  Referral 
-class ReferralBase(BaseModel):
+# ---------- Prescription ----------
+class PrescriptionCreate(BaseModel):
+    consultation_id: int
     patient_id: int
-    from_doctor_id: int
-    to_specialty: str
-    reason: str
-    status: str = "pendente"
+    doctor_id: int
+    medication: str
+    dosage: str
+    duration: str
 
-class ReferralCreate(ReferralBase):
-    pass
-
-class ReferralOut(ReferralBase):
+class PrescriptionOut(BaseModel):
     id: int
-    created_at: datetime
+    consultation_id: int
+    patient_id: int
+    doctor_id: int
+    medication: str
+    dosage: str
+    duration: str
+    issued_at: str
 
-    class Config:
-        from_attributes = True
+# ---------- Referral ----------
+class ReferralCreate(BaseModel):
+    consultation_id: int
+    patient_id: int
+    to_unit: str
+    reason: str
 
-#  Chat 
-class ChatMessageBase(BaseModel):
-    receiver_id: int
-    message: str
+class ReferralOut(BaseModel):
+    id: int
+    consultation_id: int
+    patient_id: int
+    to_unit: str
+    reason: str
+    date: str
 
-class ChatMessageCreate(ChatMessageBase):
-    pass
+# ---------- Chat ----------
+class ChatMessageCreate(BaseModel):
+    text: str
 
 class ChatMessageOut(BaseModel):
     id: int
     sender_id: int
-    receiver_id: int
-    message: str
-    timestamp: datetime
-    is_read: bool
+    sender_name: str
+    text: str
+    timestamp: str
 
-    class Config:
-        from_attributes = True
-
-#  Notification 
-class NotificationBase(BaseModel):
-    title: str
-    message: str
-    type: str = "info"
-
-class NotificationCreate(NotificationBase):
-    pass
-
+# ---------- Notification ----------
 class NotificationOut(BaseModel):
     id: int
     user_id: int
-    title: str
     message: str
-    is_read: bool
-    created_at: datetime
     type: str
+    read: bool
+    created_at: str
 
-    class Config:
-        from_attributes = True
+# ---------- Triage ----------
+class TriageSymptom(BaseModel):
+    symptom: str
+    severity: int
 
-#  Reports 
-class ReportQueryParams(BaseModel):
-    type: str  # sales, consultations, prescriptions, top_medicines, payment_methods, unread_notifications
-    period: str  # daily, weekly, monthly, custom
-    start_date: Optional[date] = None
-    end_date: Optional[date] = None
-
-class ReportResponse(BaseModel):
-    data: Dict[str, Any]
-
-#  Triagem 
 class TriageRequest(BaseModel):
-    symptoms: str
+    symptoms: List[TriageSymptom]
 
 class TriageResponse(BaseModel):
-    possible_diagnosis: str
-    urgency: str  # low, medium, high, emergency
-    recommendations: str
+    possible_conditions: List[str]
+    recommendation: str
+    urgency: str

@@ -1,11 +1,12 @@
 ﻿from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 from app.database import get_db
-from app.models.models import Sale, Product
+from app.models.models import Sale, Product, User   # <-- ADICIONAR User AQUI
 from app.schemas.schemas import SaleCreate, SaleOut
 from app.dependencies import get_current_user
 from typing import List
 from datetime import datetime
+from app.models.models import Sale, Product, User
 
 router = APIRouter()
 

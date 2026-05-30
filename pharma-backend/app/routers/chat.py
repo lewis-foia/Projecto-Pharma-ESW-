@@ -1,48 +1,43 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlmodel import Session, select
+from fastapi import APIRouter, Depends, HTTPException
+from sqlmodel import Session
+from app.database import get_db
+from app.models.models import ChatMessage, User
+from app.schemas.schemas import ChatMessageOut, ChatMessageCreate
+from app.dependencies import get_current_user
 from typing import List
 
-from app.database import get_db
-from app.dependencies import get_current_user
-from app.models.models import User, ChatMessage
-from app.schemas.schemas import ChatMessageCreate, ChatMessageOut
-
-router = APIRouter(prefix="/chat", tags=["Chat"])
+router = APIRouter()
 
 @router.get("/", response_model=List[ChatMessageOut])
-def list_messages(
-    with_user_id: int = Query(..., description="ID do outro utilizador na conversa"),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Lista mensagens trocadas entre o utilizador logado e outro utilizador"""
-    messages = db.exec(
-        select(ChatMessage).where(
-            ((ChatMessage.sender_id == current_user.id) & (ChatMessage.receiver_id == with_user_id)) |
-            ((ChatMessage.sender_id == with_user_id) & (ChatMessage.receiver_id == current_user.id))
-        ).order_by(ChatMessage.timestamp)
-    ).all()
-    return messages
+def get_messages(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    messages = db.query(ChatMessage).order_by(ChatMessage.timestamp.desc()).limit(50).all()
+    result = []
+    for m in messages:
+        sender = db.get(User, m.sender_id)
+        result.append(ChatMessageOut(
+            id=m.id,
+            sender_id=m.sender_id,
+            sender_name=sender.full_name if sender else "Desconhecido",
+            text=m.text,
+            timestamp=m.timestamp
+        ))
+    # Ordenar por timestamp ascendente (mais antigas primeiro)
+    result.reverse()
+    return result
 
-@router.post("/", response_model=ChatMessageOut, status_code=status.HTTP_201_CREATED)
-def send_message(
-    message: ChatMessageCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Envia uma mensagem para outro utilizador"""
-    # Verificar se o destinatário existe
-    receiver = db.get(User, message.receiver_id)
-    if not receiver:
-        raise HTTPException(status_code=404, detail="Receiver not found")
-
-    db_message = ChatMessage(
+@router.post("/", response_model=ChatMessageOut)
+def send_message(msg: ChatMessageCreate, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    db_msg = ChatMessage(
         sender_id=current_user.id,
-        receiver_id=message.receiver_id,
-        message=message.message,
-        is_read=False
+        text=msg.text
     )
-    db.add(db_message)
+    db.add(db_msg)
     db.commit()
-    db.refresh(db_message)
-    return db_message
+    db.refresh(db_msg)
+    return ChatMessageOut(
+        id=db_msg.id,
+        sender_id=db_msg.sender_id,
+        sender_name=current_user.full_name,
+        text=db_msg.text,
+        timestamp=db_msg.timestamp
+    )

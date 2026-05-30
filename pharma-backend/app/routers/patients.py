@@ -1,72 +1,43 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, HTTPException
+from sqlmodel import Session
+from app.database import get_db
+from app.models.models import Patient
+from app.schemas.schemas import PatientOut, PatientCreate
+from app.dependencies import get_current_user
 from typing import List
 
-from app.database import get_db
-from app.dependencies import get_current_user
-from app.models.models import User, Patient
-from app.schemas.schemas import PatientCreate, PatientUpdate, PatientOut
-
-router = APIRouter(prefix="/patients", tags=["Patients"])
+router = APIRouter()
 
 @router.get("/", response_model=List[PatientOut])
-def list_patients(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Lista todos os pacientes (requer autenticação)"""
-    patients = db.query(Patient).all()
-    return patients
+def list_patients(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    return db.query(Patient).all()
 
 @router.get("/{patient_id}", response_model=PatientOut)
-def get_patient(
-    patient_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Obtém um paciente pelo ID"""
-    patient = db.query(Patient).filter(Patient.id == patient_id).first()
+def get_patient(patient_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    patient = db.get(Patient, patient_id)
     if not patient:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
+        raise HTTPException(status_code=404, detail="Paciente não encontrado")
     return patient
 
-@router.post("/", response_model=PatientOut, status_code=status.HTTP_201_CREATED)
-def create_patient(
-    patient: PatientCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Cria um novo paciente"""
-    # Validação do género (apenas M ou F)
-    if patient.gender not in ["M", "F"]:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Gender must be 'M' or 'F'")
-    
-    db_patient = Patient(**patient.model_dump())
+@router.post("/", response_model=PatientOut)
+def create_patient(patient: PatientCreate, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    if current_user.role not in ["admin", "recepcionista"]:
+        raise HTTPException(status_code=403, detail="Sem permissão")
+    db_patient = Patient.from_orm(patient)
     db.add(db_patient)
     db.commit()
     db.refresh(db_patient)
     return db_patient
 
 @router.put("/{patient_id}", response_model=PatientOut)
-def update_patient(
-    patient_id: int,
-    patient_data: PatientUpdate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Actualização completa de um paciente (PUT)"""
-    # Validação do género
-    if patient_data.gender not in ["M", "F"]:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Gender must be 'M' or 'F'")
-    
-    db_patient = db.query(Patient).filter(Patient.id == patient_id).first()
+def update_patient(patient_id: int, patient: PatientCreate, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    if current_user.role not in ["admin", "recepcionista"]:
+        raise HTTPException(status_code=403, detail="Sem permissão")
+    db_patient = db.get(Patient, patient_id)
     if not db_patient:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
-    
-    # Actualiza todos os campos
-    for key, value in patient_data.model_dump().items():
+        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+    for key, value in patient.dict().items():
         setattr(db_patient, key, value)
-    
     db.commit()
     db.refresh(db_patient)
     return db_patient

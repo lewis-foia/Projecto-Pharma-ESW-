@@ -1,13 +1,13 @@
-﻿from sqlmodel import SQLModel, Field, Relationship
-from typing import Optional, List
-from datetime import date, datetime
+﻿from sqlmodel import SQLModel, Field
+from typing import Optional
+from datetime import datetime
 
 class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     username: str = Field(index=True, unique=True)
     full_name: str
     email: str
-    role: str = "pharmacist"  # admin, pharmacist
+    role: str = "patient"  # admin, pharmacist, patient
     hashed_password: str
     is_active: bool = True
 
@@ -29,15 +29,67 @@ class Sale(SQLModel, table=True):
     created_at: str = Field(default_factory=lambda: datetime.now().isoformat())
 
 class Patient(SQLModel, table=True):
-    __tablename__ = "patients"
-
     id: Optional[int] = Field(default=None, primary_key=True)
-    name: str = Field(nullable=False)
-    birth_date: date = Field(nullable=False)
-    gender: str = Field(max_length=1, nullable=False)  # 'M' ou 'F'
-    phone: str = Field(nullable=False)
-    address: str = Field(nullable=False)
+    name: str
+    birth_date: str
+    gender: str
+    phone: str
+    address: str
     history: Optional[str] = None
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), 
-                                 sa_column_kwargs={"onupdate": lambda: datetime.now(timezone.utc)})
+
+class Doctor(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str
+    specialty: str
+    phone: str
+    email: str
+    available_days: str  # "Seg, Qua, Sex"
+
+class Consultation(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    patient_id: int = Field(foreign_key="patient.id")
+    doctor_id: int = Field(foreign_key="doctor.id")
+    date: str
+    time: str
+    status: str = "agendada"  # agendada, realizada, cancelada
+    notes: Optional[str] = None
+
+class Payment(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    consultation_id: int = Field(foreign_key="consultation.id")
+    amount: float
+    method: str
+    date: str = Field(default_factory=lambda: datetime.now().isoformat())
+    receipt_number: str
+
+class Prescription(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    consultation_id: int = Field(foreign_key="consultation.id")
+    patient_id: int = Field(foreign_key="patient.id")
+    doctor_id: int = Field(foreign_key="doctor.id")
+    medication: str
+    dosage: str
+    duration: str
+    issued_at: str = Field(default_factory=lambda: datetime.now().isoformat())
+
+class Referral(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    consultation_id: int = Field(foreign_key="consultation.id")
+    patient_id: int = Field(foreign_key="patient.id")
+    to_unit: str
+    reason: str
+    date: str = Field(default_factory=lambda: datetime.now().isoformat())
+
+class ChatMessage(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    sender_id: int = Field(foreign_key="user.id")
+    text: str
+    timestamp: str = Field(default_factory=lambda: datetime.now().isoformat())
+
+class Notification(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id")
+    message: str
+    type: str  # info, warning, error
+    read: bool = False
+    created_at: str = Field(default_factory=lambda: datetime.now().isoformat())
