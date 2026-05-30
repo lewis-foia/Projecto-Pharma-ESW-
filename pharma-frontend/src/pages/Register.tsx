@@ -1,7 +1,7 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { mockApi } from '../services/mockApi';
+import { api } from '../services/api';
 import {
   User,
   Lock,
@@ -78,8 +78,8 @@ export default function Register() {
 
     setSubmitting(true);
     try {
-      await mockApi.createUser?.({
-        fullName: form.fullName.trim(),
+      await api.register({
+        full_name: form.fullName.trim(),
         username: form.username.trim(),
         email: form.email.trim(),
         password: form.password,

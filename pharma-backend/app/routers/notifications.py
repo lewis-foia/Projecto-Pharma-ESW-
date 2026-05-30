@@ -1,39 +1,23 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import Session, select
+from fastapi import APIRouter, Depends, HTTPException
+from sqlmodel import Session
+from app.database import get_db
+from app.models.models import Notification
+from app.schemas.schemas import NotificationOut
+from app.dependencies import get_current_user
 from typing import List
 
-from app.database import get_db
-from app.dependencies import get_current_user
-from app.models.models import User, Notification
-from app.schemas.schemas import NotificationOut
-
-router = APIRouter(prefix="/notifications", tags=["Notifications"])
+router = APIRouter()
 
 @router.get("/", response_model=List[NotificationOut])
-def list_notifications(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    #Lista todas as notificações do utilizador com sessão iniciada
-    notifications = db.exec(
-        select(Notification).where(Notification.user_id == current_user.id).order_by(Notification.created_at.desc())
-    ).all()
-    return notifications
+def list_notifications(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    return db.query(Notification).filter(Notification.user_id == current_user.id).all()
 
 @router.put("/{notification_id}/read", response_model=NotificationOut)
-def mark_as_read(
-    notification_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    # Marcação de uma notificação como lida (is_read = True)
-    notification = db.get(Notification, notification_id)
-    if not notification:
-        raise HTTPException(status_code=404, detail="Notification not found")
-    if notification.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to modify this notification")
-    notification.is_read = True
-    db.add(notification)
+def mark_read(notification_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    notif = db.get(Notification, notification_id)
+    if not notif or notif.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Notificação não encontrada")
+    notif.read = True
     db.commit()
-    db.refresh(notification)
-    return notification
+    db.refresh(notif)
+    return notif

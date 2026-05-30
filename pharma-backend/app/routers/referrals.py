@@ -1,40 +1,25 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import Session, select
+from fastapi import APIRouter, Depends, HTTPException
+from sqlmodel import Session
+from app.database import get_db
+from app.models.models import Referral
+from app.schemas.schemas import ReferralOut, ReferralCreate
+from app.dependencies import get_current_user
 from typing import List
 
-from app.database import get_db
-from app.dependencies import get_current_user
-from app.models.models import User, Referral, Patient, Doctor
-from app.schemas.schemas import ReferralCreate, ReferralOut
-
-router = APIRouter(prefix="/referrals", tags=["Referrals"])
+router = APIRouter()
 
 @router.get("/", response_model=List[ReferralOut])
-def list_referrals(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    # Listagem de todos os encaminhamentos, mediante requer autenticação
-    referrals = db.exec(select(Referral)).all()
-    return referrals
+def list_referrals(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    if current_user.role not in ["admin", "recepcionista"]:
+        raise HTTPException(status_code=403, detail="Sem permissão")
+    return db.query(Referral).all()
 
-@router.post("/", response_model=ReferralOut, status_code=status.HTTP_201_CREATED)
-def create_referral(
-    referral: ReferralCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    # Criação de um novo encaminhamento
-    # Verificação de existências
-    patient = db.get(Patient, referral.patient_id)
-    if not patient:
-        raise HTTPException(status_code=404, detail="Patient not found")
-    doctor = db.get(Doctor, referral.from_doctor_id)
-    if not doctor:
-        raise HTTPException(status_code=404, detail="Doctor not found")
-
-    db_referral = Referral.model_validate(referral)
-    db.add(db_referral)
+@router.post("/", response_model=ReferralOut)
+def create_referral(referral: ReferralCreate, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    if current_user.role not in ["admin", "recepcionista"]:
+        raise HTTPException(status_code=403, detail="Sem permissão")
+    db_ref = Referral.from_orm(referral)
+    db.add(db_ref)
     db.commit()
-    db.refresh(db_referral)
-    return db_referral
+    db.refresh(db_ref)
+    return db_ref

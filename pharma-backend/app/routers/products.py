@@ -1,7 +1,7 @@
-﻿from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import Session
+﻿from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlmodel import Session, select
 from app.database import get_db
-from app.models.models import Product
+from app.models.models import Product, User
 from app.schemas.schemas import ProductOut, ProductCreate
 from app.dependencies import get_current_user
 from typing import List
@@ -39,8 +39,6 @@ def search_products(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # Pesquisa produtos por nome ou categoria
-    
     products = db.exec(
         select(Product).where(
             (Product.name.ilike(f"%{q}%")) | (Product.category.ilike(f"%{q}%"))
