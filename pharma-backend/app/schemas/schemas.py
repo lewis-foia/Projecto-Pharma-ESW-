@@ -62,7 +62,7 @@ class PatientCreate(PatientBase):
     pass
 
 class PatientUpdate(PatientBase):
-    pass  # PUT usa todos os campos
+    pass
 
 class PatientOut(PatientBase):
     id: int

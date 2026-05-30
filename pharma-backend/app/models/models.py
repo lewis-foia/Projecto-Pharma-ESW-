@@ -1,6 +1,6 @@
 ﻿from sqlmodel import SQLModel, Field, Relationship
 from typing import Optional, List
-from datetime import datetime
+from datetime import date, datetime
 
 class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -28,17 +28,16 @@ class Sale(SQLModel, table=True):
     sold_by: int = Field(foreign_key="user.id")
     created_at: str = Field(default_factory=lambda: datetime.now().isoformat())
 
-from datetime import date, datetime
-
-class Patient(Base):
+class Patient(SQLModel, table=True):
     __tablename__ = "patients"
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    birth_date = Column(Date, nullable=False)
-    gender = Column(String(1), nullable=False)  # 'M' ou 'F'
-    phone = Column(String, nullable=False)
-    address = Column(String, nullable=False)
-    history = Column(Text, nullable=True)  # histórico médico opcional
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(nullable=False)
+    birth_date: date = Field(nullable=False)
+    gender: str = Field(max_length=1, nullable=False)  # 'M' ou 'F'
+    phone: str = Field(nullable=False)
+    address: str = Field(nullable=False)
+    history: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), 
+                                 sa_column_kwargs={"onupdate": lambda: datetime.now(timezone.utc)})
