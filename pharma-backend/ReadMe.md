@@ -1,10 +1,8 @@
-📄 pharma-backend/README.md
-markdown
 # Pharma Backend
 
 API REST para gestão de farmácia com autenticação JWT, CRUD de medicamentos, vendas e administração de utilizadores. Desenvolvido com **FastAPI**, **SQLModel** e **SQLite**.
 
-## 🛠️ Stack
+## Stack
 
 | Tecnologia   | Finalidade                          |
 |--------------|-------------------------------------|
@@ -15,7 +13,7 @@ API REST para gestão de farmácia com autenticação JWT, CRUD de medicamentos,
 | python-jose  | Geração e validação de tokens JWT  |
 | Uvicorn      | Servidor ASGI                       |
 
-## 📁 Estrutura
+## Estrutura
 pharma-backend/
 ├── app/
 │ ├── main.py # Ponto de entrada da aplicação
@@ -39,19 +37,22 @@ pharma-backend/
 
 text
 
-## 🚀 Como executar
+## Como executar
 
 ### 1. Criar e ativar ambiente virtual (PowerShell)
 
-```powershell
+
 python -m venv venv
 .\venv\Scripts\activate
+
 2. Instalar dependências
-powershell
+
 pip install -r requirements.txt
+
 3. Iniciar o servidor
-powershell
+
 uvicorn app.main:app --reload --port 8000
+
 A API ficará disponível em http://localhost:8000.
 
 4. Documentação interativa (Swagger)
@@ -59,7 +60,7 @@ Swagger UI: http://localhost:8000/docs
 
 ReDoc: http://localhost:8000/redoc
 
-🔐 Autenticação
+## Autenticação
 A API utiliza tokens JWT. Para obter um token:
 
 POST /auth/login
@@ -77,7 +78,8 @@ Inclua o token nas requisições protegidas:
 
 text
 Authorization: Bearer <token>
-📦 Endpoints principais
+
+## Endpoints principais
 Auth
 POST /auth/login → Login
 
@@ -100,7 +102,7 @@ GET /users/ → Listar todos os utilizadores
 
 PUT /users/{id}/toggle-active → Activar/desactivar utilizador
 
-🌱 Dados Mock
+## Dados Mock
 Na primeira execução, o sistema popula automaticamente a base de dados com:
 
 8 medicamentos de categorias variadas

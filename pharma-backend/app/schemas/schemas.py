@@ -1,5 +1,7 @@
 ﻿from pydantic import BaseModel
 from typing import Optional, List
+from datetime import date, datetime
+from typing import Optional
 
 class Token(BaseModel):
     access_token: str
@@ -44,12 +46,7 @@ class SaleOut(BaseModel):
     sold_by_name: str
     created_at: str
 
-from datetime import date, datetime
-from typing import Optional
 
-# ... (schemas existentes)
-
-# Patient schemas
 class PatientBase(BaseModel):
     name: str
     birth_date: date

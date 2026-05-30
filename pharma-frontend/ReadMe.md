@@ -1,13 +1,8 @@
----
-
-## 📄 `pharma-frontend/README.md`
-
-```markdown
 # Pharma Frontend
 
 Interface web para gestão de farmácia desenvolvida com **React**, **TypeScript** e **Tailwind CSS**. O frontend é totalmente independente e utiliza um serviço **mock** interno (dados em memória) para simular todas as operações.
 
-## 🎨 Stack
+## Stack
 
 | Tecnologia         | Finalidade                         |
 |--------------------|------------------------------------|
@@ -18,7 +13,7 @@ Interface web para gestão de farmácia desenvolvida com **React**, **TypeScript
 | Recharts           | Gráficos (dashboard)               |
 | Vite               | Build tool e dev server            |
 
-## 📁 Estrutura
+## Estrutura
 pharma-frontend/
 ├── public/
 ├── src/
@@ -48,62 +43,64 @@ pharma-frontend/
 ├── package.json
 └── README.md
 
-text
 
-## 🚀 Como executar
+## Como executar
 
 ### 1. Instalar dependências
 
-```powershell
 npm install
+
 2. Iniciar servidor de desenvolvimento
-powershell
+
 npm run dev
+
 O frontend ficará disponível em http://localhost:5173.
 
 3. Build para produção
-powershell
+
 npm run build
 npm run preview
-🔐 Autenticação (mock)
+
+## Autenticação (mock)
 O sistema utiliza um contexto de autenticação simulado. As credenciais estão definidas no ficheiro src/services/mockApi.ts:
 
 Utilizador	Password	Papel
-admin	admin123	Administrador
+admin		admin123	Administrador
 farmacia	farma123	Farmacêutico
+
 O token JWT é simulado (string fixa) e não há comunicação real com o backend.
 
-📱 Funcionalidades
-🔐 Login
+## Funcionalidades
+## Login
 Validação de credenciais contra o mock
 
 Redirecionamento automático para o dashboard após login
 
-📊 Dashboard
+## Dashboard
 Cartões com resumo: total de produtos, vendas do dia, stock crítico, receita dos últimos 7 dias
 
 Gráfico de barras (Recharts) com as vendas diárias da última semana
 
 Alertas para produtos com stock abaixo do mínimo
 
-💊 Medicamentos
+## Medicamentos
 Tabela com todos os produtos (nome, categoria, preço, stock, validade)
 
 Modal para criar novo produto ou editar existente
 
 Destaque visual para stock baixo (a vermelho)
 
-🧾 Vendas
+## Vendas
 Histórico completo de vendas (data, produto, quantidade, total, vendedor)
 
 Modal de registo rápido: seleciona o produto e a quantidade, calcula o total automaticamente e actualiza o stock
 
-👥 Administração (apenas admin)
+## Administração (apenas admin)
 Lista de utilizadores com nome, username, email e papel
 
 Activar/desactivar utilizadores (excepto o próprio administrador)
 
-🧪 Dados Mock
+## Dados Mock
 O serviço mockApi.ts contém:
 
 8 medicamentos predefinidos
