@@ -32,3 +32,18 @@ def update_product(product_id: int, product: ProductCreate, db: Session = Depend
     db.commit()
     db.refresh(db_product)
     return db_product
+
+@router.get("/search/", response_model=List[ProductOut])
+def search_products(
+    q: str = Query(..., min_length=1, description="Termo de pesquisa (nome ou categoria)"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # Pesquisa produtos por nome ou categoria
+    
+    products = db.exec(
+        select(Product).where(
+            (Product.name.ilike(f"%{q}%")) | (Product.category.ilike(f"%{q}%"))
+        )
+    ).all()
+    return products
