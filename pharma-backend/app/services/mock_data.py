@@ -1,9 +1,10 @@
 ﻿from sqlmodel import Session
 from app.database import engine
-from app.models.models import User, Product, Sale, Patient
+from app.models.models import User, Product, Sale, Patient, Doctor, Consultation, Payment, Prescription, Referral, ChatMessage, Notification
 from app.utils.security import hash_password
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, date, timezone
 from random import randint, choice
+import json
 
 def seed_mock_data():
     with Session(engine) as db:
@@ -63,7 +64,8 @@ def seed_mock_data():
             for p in patients_data:
                 patient = Patient(**p)
                 db.add(patient)
-        
+        seed_patients(db)
+
         db.commit()
 
         base = datetime.now() - timedelta(days=30)
@@ -78,4 +80,148 @@ def seed_mock_data():
                 created_at=(base + timedelta(days=randint(0, 30))).isoformat()
             )
             db.add(sale)
+
+        if db.query(Doctor).count() == 0: # Verificação de existência de médicos
+            # Criação de users para médicos (se não existirem)
+            doctor_users = [
+                User(username="dr_silva", full_name="Dr. António Silva", email="antonio.silva@clinicapt", role="pharmacist", hashed_password=hash_password("doctor123")),
+                User(username="dr_mabunda", full_name="Dra. Lina Mabunda", email="lina.mabunda@clinicapt", role="pharmacist", hashed_password=hash_password("doctor123")),
+            ]
+            for u in doctor_users:
+                if not db.query(User).filter(User.email == u.email).first():
+                    db.add(u)
+            db.commit()
+
+        # Obter os users criados
+        user_silva = db.query(User).filter(User.email == "antonio.silva@clinicapt").first()
+        user_mabunda = db.query(User).filter(User.email == "lina.mabunda@clinicapt").first()
+
+        doctors_data = [
+            {"user_id": user_silva.id, "crm": "CRM12345", "specialty": "Clínica Geral", "phone": "821234567", "email": user_silva.email},
+            {"user_id": user_mabunda.id, "crm": "CRM67890", "specialty": "Pediatria", "phone": "823456789", "email": user_mabunda.email},
+        ]
+        for d in doctors_data:
+            db.add(Doctor(**d))
         db.commit()
+
+    
+        # MOCK DE CONSULTAS
+        
+        if db.query(Consultation).count() == 0:
+            patients = db.query(Patient).all()
+            doctors = db.query(Doctor).all()
+            if patients and doctors:
+                
+                base_date = datetime.now(timezone.utc) - timedelta(days=20)
+                for i in range(10):
+                    patient = choice(patients)
+                    doctor = choice(doctors)
+                    cons = Consultation(
+                        patient_id=patient.id,
+                        doctor_id=doctor.id,
+                        scheduled_date=base_date + timedelta(days=i),
+                        status=choice(["agendada", "realizada", "cancelada"]),
+                        notes=f"Notas da consulta {i+1}"
+                    )
+                    db.add(cons)
+                db.commit()
+
+        
+        # MOCK DE PAGAMENTOS
+        
+        if db.query(Payment).count() == 0:
+            consultations = db.query(Consultation).all()
+            users = db.query(User).all()
+            registrar = users[0]  # admin
+            methods = ["dinheiro", "cartao", "mpesa", "emola", "mkesh"]
+            statuses = ["pendente", "pago"]
+            for i, cons in enumerate(consultations[:5]):  # só para as primeiras 5 consultas
+                payment = Payment(
+                    consultation_id=cons.id,
+                    amount=round(randint(2000, 10000)/100, 2),  # entre 20 e 100
+                    payment_date=datetime.now(timezone.utc) - timedelta(days=i),
+                    method=choice(methods),
+                    status=choice(statuses),
+                    receipt_number=f"RCP-{int(datetime.now().timestamp())}-{i}",
+                    registered_by=registrar.id
+                )
+                db.add(payment)
+            db.commit()
+
+        
+        # MOCK DE PRESCRIÇÕES
+        
+        if db.query(Prescription).count() == 0:
+            patients = db.query(Patient).all()
+            doctors = db.query(Doctor).all()
+            consultations = db.query(Consultation).all()
+            for i in range(5):
+                prescription = Prescription(
+                    patient_id=choice(patients).id,
+                    doctor_id=choice(doctors).id,
+                    consultation_id=choice(consultations).id if consultations else None,
+                    medications=json.dumps([
+                        {"name": "Paracetamol 500mg", "dosage": "1 comprimido de 8/8h", "duration": "3 dias"},
+                        {"name": "Ibuprofeno 400mg", "dosage": "1 comprimido de 12/12h", "duration": "2 dias"}
+                    ]),
+                    issued_at=datetime.now(timezone.utc) - timedelta(days=i),
+                    notes="Tomar após as refeições"
+                )
+                db.add(prescription)
+            db.commit()
+
+        
+        # MOCK DE ENCAMINHAMENTOS
+        
+        if db.query(Referral).count() == 0:
+            patients = db.query(Patient).all()
+            doctors = db.query(Doctor).all()
+            specialties = ["Cardiologia", "Neurologia", "Ortopedia", "Oftalmologia", "Dermatologia"]
+            for i in range(5):
+                referral = Referral(
+                    patient_id=choice(patients).id,
+                    from_doctor_id=choice(doctors).id,
+                    to_specialty=choice(specialties),
+                    reason="Necessita de avaliação especializada",
+                    status=choice(["pendente", "aceite", "concluido"]),
+                    created_at=datetime.now(timezone.utc) - timedelta(days=i)
+                )
+                db.add(referral)
+            db.commit()
+
+        
+        # MOCK DE MENSAGENS DE CHAT
+        
+        if db.query(ChatMessage).count() == 0:
+            users = db.query(User).all()
+            if len(users) >= 2:
+                # Mensagens entre admin e dr_silva
+                admin = users[0]
+                dr_silva = db.query(User).filter(User.email == "antonio.silva@clinicapt").first()
+                if dr_silva:
+                    messages = [
+                        {"sender_id": admin.id, "receiver_id": dr_silva.id, "message": "Olá Dr. Silva, como está?", "timestamp": datetime.now(timezone.utc) - timedelta(days=2)},
+                        {"sender_id": dr_silva.id, "receiver_id": admin.id, "message": "Bom dia! Tudo bem, obrigado.", "timestamp": datetime.now(timezone.utc) - timedelta(days=2, hours=1)},
+                        {"sender_id": admin.id, "receiver_id": dr_silva.id, "message": "Precisamos de mais medicamentos na farmácia.", "timestamp": datetime.now(timezone.utc) - timedelta(days=1)},
+                    ]
+                    for m in messages:
+                        db.add(ChatMessage(**m))
+                db.commit()
+
+        
+        # MOCK DE NOTIFICAÇÕES
+        
+        if db.query(Notification).count() == 0:
+            users = db.query(User).all()
+            for user in users:
+                for i in range(2):
+                    notif = Notification(
+                        user_id=user.id,
+                        title=f"Notificação {i+1}",
+                        message="Esta é uma notificação de exemplo.",
+                        type=choice(["info", "alerta", "lembrete"]),
+                        is_read=(i==0),  # primeira lida, segunda não lida
+                        created_at=datetime.now(timezone.utc) - timedelta(days=i)
+                    )
+                    db.add(notif)
+            db.commit()
